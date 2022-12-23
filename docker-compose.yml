@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  api:
+    restart: unless-stopped
+    build:
+      target: development
+      context: .
+    volumes:
+      - ./src/:/src/src
+      - /src/node_modules
+    command: npm run start:dev
+    depends_on:
+      - mysql
+    links:
+      - mysql
+    env_file:
+      - .env
+    ports:
+      - ${PORT}:${PORT}
+        # debugging port
+      - 9229:9229
+    expose:
+      - ${PORT}
+    networks:
+      - backend
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ALLOW_EMPTY_PASSWORD: ok
+      MYSQL_ROOT_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    expose:
+      - ${DB_PORT}
+    networks:
+      - backend
+    volumes:
+      - mysql_data:/src/lib/mysql
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: 'rabbitmq'
+    ports:
+        - 5672:5672
+        - 15672:15672
+    volumes:
+        - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+        - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+    networks:
+        - backend
+
+networks:
+  backend:
+      driver: bridge
+
+volumes:
+  mysql_data:
